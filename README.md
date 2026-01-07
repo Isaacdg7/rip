@@ -3,21 +3,28 @@
 > Fuzzy find and kill processes from your terminal
 
 <p align="center">
-  <img src="demo.gif" alt="rip demo" width="600">
+  <img src="public/screenshot.png" alt="rip demo" width="700">
+</p>
+
+<p align="center">
+  <a href="https://crates.io/crates/rip-cli"><img src="https://img.shields.io/crates/v/rip-cli.svg" alt="Crates.io"></a>
+  <a href="https://crates.io/crates/rip-cli"><img src="https://img.shields.io/crates/d/rip-cli.svg" alt="Downloads"></a>
+  <a href="https://github.com/cesarferreira/rip-cli/blob/main/LICENSE"><img src="https://img.shields.io/crates/l/rip-cli.svg" alt="License"></a>
+  <a href="https://github.com/cesarferreira/rip-cli"><img src="https://img.shields.io/github/stars/cesarferreira/rip-cli?style=social" alt="GitHub Stars"></a>
 </p>
 
 ## Installation
-
-### From source
-
-```bash
-cargo install --path .
-```
 
 ### Cargo
 
 ```bash
 cargo install rip-cli
+```
+
+### From source
+
+```bash
+cargo install --path .
 ```
 
 ## Usage
@@ -54,7 +61,7 @@ rip --sort name
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Select/deselect process |
+| `Space` | Select/deselect process |
 | `Enter` | Kill selected processes |
 | `Esc` / `Ctrl+C` | Cancel |
 | Type | Fuzzy search |
