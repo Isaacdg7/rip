@@ -1,11 +1,22 @@
 use clap::{Parser, ValueEnum};
 use colored::Colorize;
+use crossterm::{
+    event::{self, Event, KeyCode, KeyEventKind},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
 use inquire::MultiSelect;
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
+use ratatui::{
+    prelude::*,
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
+};
+use std::collections::HashSet;
 use std::fmt;
+use std::io::stdout;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use sysinfo::System;
 use terminal_size::{terminal_size, Width};
 
@@ -32,6 +43,10 @@ struct Args {
     /// Sort processes by field (default: cpu)
     #[arg(long, value_enum, default_value = "cpu")]
     sort: SortBy,
+
+    /// Live mode with auto-refreshing process list
+    #[arg(short, long)]
+    live: bool,
 }
 
 fn truncate(s: &str, max_len: usize) -> String {
@@ -66,17 +81,17 @@ struct ProcessInfo {
 impl fmt::Display for ProcessInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let display_name = truncate(&self.name, self.name_width);
-        let pid_str = format!("{:<7}", self.pid).dimmed();
-        let name_str = format!("{:<width$}", display_name, width = self.name_width).white();
+        let pid_str = Colorize::dimmed(format!("{:<7}", self.pid).as_str());
+        let name_str = Colorize::white(format!("{:<width$}", display_name, width = self.name_width).as_str());
         let cpu_str = format!("{:>5.1}%", self.cpu);
         let cpu_colored = if self.cpu > 50.0 {
-            cpu_str.red().bold()
+            Colorize::bold(Colorize::red(cpu_str.as_str()))
         } else if self.cpu > 10.0 {
-            cpu_str.yellow()
+            Colorize::yellow(cpu_str.as_str())
         } else {
-            cpu_str.dimmed()
+            Colorize::dimmed(cpu_str.as_str())
         };
-        let mem_str = format!("{:>6} MB", self.memory).cyan();
+        let mem_str = Colorize::cyan(format!("{:>6} MB", self.memory).as_str());
 
         write!(f, "{} {} {} {}", pid_str, name_str, cpu_colored, mem_str)
     }
@@ -152,10 +167,10 @@ fn run_selector(processes: Vec<ProcessInfo>) -> Vec<ProcessInfo> {
     // 6 spaces to account for inquire checkbox prefix ("> [ ]" or "  [ ]")
     let header = format!(
         "      {:<7} {:<width$} {:>6} {:>9}",
-        "PID".dimmed(),
-        "NAME".dimmed(),
-        "CPU %".dimmed(),
-        "MEMORY".dimmed(),
+        Colorize::dimmed("PID"),
+        Colorize::dimmed("NAME"),
+        Colorize::dimmed("CPU %"),
+        Colorize::dimmed("MEMORY"),
         width = name_width
     );
 
@@ -170,20 +185,268 @@ fn run_selector(processes: Vec<ProcessInfo>) -> Vec<ProcessInfo> {
     }
 }
 
+fn run_live_mode(filter: Option<&str>, sort_by: SortBy, signal: Signal) -> std::io::Result<()> {
+    enable_raw_mode()?;
+    stdout().execute(EnterAlternateScreen)?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+
+    let mut table_state = TableState::default();
+    table_state.select(Some(0));
+    let mut selected_pids: HashSet<u32> = HashSet::new();
+    let mut last_refresh = Instant::now();
+    let refresh_interval = Duration::from_secs(2);
+    let mut sys = System::new_all();
+    let mut processes = refresh_processes(&mut sys, filter, sort_by);
+    let mut show_confirm = false;
+
+    loop {
+        // Auto-refresh
+        if last_refresh.elapsed() >= refresh_interval && !show_confirm {
+            processes = refresh_processes(&mut sys, filter, sort_by);
+            last_refresh = Instant::now();
+            // Ensure selection is valid
+            if let Some(selected) = table_state.selected() {
+                if selected >= processes.len() && !processes.is_empty() {
+                    table_state.select(Some(processes.len() - 1));
+                }
+            }
+        }
+
+        terminal.draw(|frame| {
+            let area = frame.area();
+
+            // Create table rows
+            let rows: Vec<Row> = processes
+                .iter()
+                .map(|p| {
+                    let is_selected = selected_pids.contains(&p.pid);
+                    let marker = if is_selected { "●" } else { " " };
+                    let cpu_style = if p.cpu > 50.0 {
+                        Style::default().fg(Color::Red).bold()
+                    } else if p.cpu > 10.0 {
+                        Style::default().fg(Color::Yellow)
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    };
+
+                    Row::new(vec![
+                        Cell::from(marker).style(if is_selected {
+                            Style::default().fg(Color::Green).bold()
+                        } else {
+                            Style::default()
+                        }),
+                        Cell::from(format!("{}", p.pid)).style(Style::default().fg(Color::DarkGray)),
+                        Cell::from(truncate(&p.name, 40)).style(Style::default().fg(Color::White)),
+                        Cell::from(format!("{:>5.1}%", p.cpu)).style(cpu_style),
+                        Cell::from(format!("{:>6} MB", p.memory)).style(Style::default().fg(Color::Cyan)),
+                    ])
+                })
+                .collect();
+
+            let header = Row::new(vec![
+                Cell::from(" "),
+                Cell::from("PID").style(Style::default().fg(Color::DarkGray)),
+                Cell::from("NAME").style(Style::default().fg(Color::DarkGray)),
+                Cell::from("CPU %").style(Style::default().fg(Color::DarkGray)),
+                Cell::from("MEMORY").style(Style::default().fg(Color::DarkGray)),
+            ])
+            .style(Style::default().bold());
+
+            let widths = [
+                Constraint::Length(2),
+                Constraint::Length(8),
+                Constraint::Min(20),
+                Constraint::Length(8),
+                Constraint::Length(12),
+            ];
+
+            let selected_count = selected_pids.len();
+            let title = if selected_count > 0 {
+                format!(" rip - {} selected ", selected_count)
+            } else {
+                " rip ".to_string()
+            };
+
+            let table = Table::new(rows, widths)
+                .header(header)
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(title)
+                        .title_bottom(" ↑↓ navigate • Space select • Enter kill • q quit "),
+                )
+                .row_highlight_style(Style::default().bg(Color::DarkGray).fg(Color::White))
+                .highlight_symbol("▶ ");
+
+            frame.render_stateful_widget(table, area, &mut table_state);
+
+            // Show confirmation dialog
+            if show_confirm {
+                let popup_area = centered_rect(50, 20, area);
+                frame.render_widget(Clear, popup_area);
+
+                let count = selected_pids.len();
+                let text = format!(
+                    "Kill {} process{}?\n\n[Enter] Confirm  [Esc] Cancel",
+                    count,
+                    if count == 1 { "" } else { "es" }
+                );
+                let popup = Paragraph::new(text)
+                    .alignment(Alignment::Center)
+                    .block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(" Confirm ")
+                            .border_style(Style::default().fg(Color::Yellow)),
+                    );
+                frame.render_widget(popup, popup_area);
+            }
+        })?;
+
+        // Handle input with timeout for refresh
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    if show_confirm {
+                        match key.code {
+                            KeyCode::Enter => {
+                                // Kill selected processes
+                                break;
+                            }
+                            KeyCode::Esc => {
+                                show_confirm = false;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        match key.code {
+                            KeyCode::Char('q') | KeyCode::Esc => {
+                                selected_pids.clear();
+                                break;
+                            }
+                            KeyCode::Up | KeyCode::Char('k') => {
+                                if let Some(selected) = table_state.selected() {
+                                    if selected > 0 {
+                                        table_state.select(Some(selected - 1));
+                                    }
+                                }
+                            }
+                            KeyCode::Down | KeyCode::Char('j') => {
+                                if let Some(selected) = table_state.selected() {
+                                    if selected < processes.len().saturating_sub(1) {
+                                        table_state.select(Some(selected + 1));
+                                    }
+                                }
+                            }
+                            KeyCode::Char(' ') => {
+                                if let Some(selected) = table_state.selected() {
+                                    if let Some(proc) = processes.get(selected) {
+                                        if selected_pids.contains(&proc.pid) {
+                                            selected_pids.remove(&proc.pid);
+                                        } else {
+                                            selected_pids.insert(proc.pid);
+                                        }
+                                    }
+                                }
+                            }
+                            KeyCode::Enter => {
+                                if !selected_pids.is_empty() {
+                                    show_confirm = true;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Cleanup terminal
+    disable_raw_mode()?;
+    stdout().execute(LeaveAlternateScreen)?;
+
+    // Kill selected processes
+    if !selected_pids.is_empty() {
+        let to_kill: Vec<ProcessInfo> = processes
+            .into_iter()
+            .filter(|p| selected_pids.contains(&p.pid))
+            .collect();
+        kill_processes(to_kill, signal);
+    }
+
+    Ok(())
+}
+
+fn refresh_processes(sys: &mut System, filter: Option<&str>, sort_by: SortBy) -> Vec<ProcessInfo> {
+    sys.refresh_all();
+    thread::sleep(Duration::from_millis(200));
+    sys.refresh_all();
+
+    let name_width = calculate_name_width();
+
+    let mut processes: Vec<ProcessInfo> = sys
+        .processes()
+        .iter()
+        .filter_map(|(pid, proc)| {
+            let name = proc.name().to_string_lossy().to_string();
+
+            if let Some(f) = filter {
+                if !name.to_lowercase().contains(&f.to_lowercase()) {
+                    return None;
+                }
+            }
+
+            Some(ProcessInfo {
+                pid: pid.as_u32(),
+                name,
+                cpu: proc.cpu_usage(),
+                memory: proc.memory() / 1024 / 1024,
+                name_width,
+            })
+        })
+        .collect();
+
+    match sort_by {
+        SortBy::Cpu => processes.sort_by(|a, b| b.cpu.partial_cmp(&a.cpu).unwrap()),
+        SortBy::Mem => processes.sort_by(|a, b| b.memory.cmp(&a.memory)),
+        SortBy::Pid => processes.sort_by(|a, b| a.pid.cmp(&b.pid)),
+        SortBy::Name => processes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase())),
+    }
+
+    processes
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Percentage((100 - percent_y) / 2),
+        Constraint::Percentage(percent_y),
+        Constraint::Percentage((100 - percent_y) / 2),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Percentage((100 - percent_x) / 2),
+        Constraint::Percentage(percent_x),
+        Constraint::Percentage((100 - percent_x) / 2),
+    ])
+    .split(popup_layout[1])[1]
+}
+
 fn kill_processes(selected: Vec<ProcessInfo>, signal: Signal) {
     for proc in selected {
         match kill(Pid::from_raw(proc.pid as i32), signal) {
             Ok(_) => println!(
                 "{} {} {}",
-                "Killed".green(),
-                proc.name.bold(),
-                format!("(PID: {})", proc.pid).dimmed()
+                Colorize::green("Killed"),
+                Colorize::bold(proc.name.as_str()),
+                Colorize::dimmed(format!("(PID: {})", proc.pid).as_str())
             ),
             Err(e) => eprintln!(
                 "{} {} {}: {}",
-                "Failed".red(),
-                proc.name.bold(),
-                format!("(PID: {})", proc.pid).dimmed(),
+                Colorize::red("Failed"),
+                Colorize::bold(proc.name.as_str()),
+                Colorize::dimmed(format!("(PID: {})", proc.pid).as_str()),
                 e
             ),
         }
@@ -200,6 +463,14 @@ fn main() {
             std::process::exit(1);
         }
     };
+
+    if args.live {
+        if let Err(e) = run_live_mode(args.filter.as_deref(), args.sort, signal) {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+        return;
+    }
 
     let processes = get_processes(args.filter.as_deref(), args.sort);
 
